@@ -1,23 +1,54 @@
-# Public/Private Key Encryption Example
+// Generate keys
+let privateKey, publicKey;
+(async function generateKeys() {
+    const keyPair = await window.crypto.subtle.generateKey(
+        {
+            name: "RSA-OAEP",
+            modulusLength: 2048,
+            publicExponent: new Uint8Array([1, 0, 1]),
+            hash: "SHA-256",
+        },
+        true,
+        ["encrypt", "decrypt"]
+    );
+    publicKey = keyPair.publicKey;
+    privateKey = keyPair.privateKey;
+})();
 
-This project demonstrates how public and private keys work for encryption and decryption using the Web Crypto API.
+document.getElementById("encryptBtn").onclick = async () => {
+    const message = document.getElementById("message").value;
+    const encodedMessage = new TextEncoder().encode(message);
 
-## Files Included
-1. `index.html` - The main HTML file for the encryption example.
-2. `script.js` - JavaScript code for encrypting and decrypting messages.
-3. `README.md` - Documentation for the project.
+    const encryptedMessage = await window.crypto.subtle.encrypt(
+        {
+            name: "RSA-OAEP",
+        },
+        publicKey,
+        encodedMessage
+    );
 
-## How It Works
-1. The Web Crypto API generates a pair of keys (public and private).
-2. The public key is used to encrypt a message entered by the user.
-3. The private key is used to decrypt the encrypted message back into its original form.
+    document.getElementById("encryptedMessage").textContent = btoa(
+        String.fromCharCode(...new Uint8Array(encryptedMessage))
+    );
+};
 
-## Steps to Run
-1. Open `index.html` in any modern web browser.
-2. Enter a message in the text area and click "Encrypt".
-3. The encrypted message will be displayed.
-4. Click "Decrypt" to retrieve the original message.
+document.getElementById("decryptBtn").onclick = async () => {
+    const encryptedMessage = atob(
+        document.getElementById("encryptedMessage").textContent
+    );
+    const encryptedMessageBuffer = new Uint8Array(
+        encryptedMessage.split("").map((char) => char.charCodeAt(0))
+    );
 
-## Purpose
-This project is designed for educational purposes to demonstrate the concept of public/private key encryption.
+    const decryptedMessage = await window.crypto.subtle.decrypt(
+        {
+            name: "RSA-OAEP",
+        },
+        privateKey,
+        encryptedMessageBuffer
+    );
 
+    document.getElementById("decryptedMessage").textContent = new TextDecoder().decode(
+        decryptedMessage
+    );
+};
